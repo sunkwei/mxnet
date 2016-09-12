@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
   }
   LOG(INFO) << "Encoding is " << encoding;
 
-  if (encoding == std::string(".png") and quality > 9) {
+  if (encoding == std::string(".png") && quality > 9) {
       quality = 3;
   }
   if (inter_method != 1) {

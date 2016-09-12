@@ -5,6 +5,7 @@ import os, sys
 import train_model
 
 def _download(data_dir):
+    print data_dir
     if not os.path.isdir(data_dir):
         os.system("mkdir " + data_dir)
     os.chdir(data_dir)
