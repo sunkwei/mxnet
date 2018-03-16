@@ -42,7 +42,7 @@ class PascalVoc(Imdb):
         if true, will load annotations
     """
     def __init__(self, image_set, year, devkit_path, shuffle=False, is_train=False,
-            names='pascal_voc.names'):
+            names='pascal_voc.names', classes=None):
         super(PascalVoc, self).__init__('voc_' + year + '_' + image_set)
         self.image_set = image_set
         self.year = year
@@ -51,8 +51,11 @@ class PascalVoc(Imdb):
         self.extension = '.jpg'
         self.is_train = is_train
 
-        self.classes = self._load_class_names(names,
-            os.path.join(os.path.dirname(__file__), 'names'))
+        if not classes:
+            self.classes = self._load_class_names(names,
+                os.path.join(os.path.dirname(__file__), 'names'))
+        else:
+            self.classes = classes
 
         self.config = {'use_difficult': True,
                        'comp_id': 'comp4',}
@@ -111,7 +114,10 @@ class PascalVoc(Imdb):
         """
         assert self.image_set_index is not None, "Dataset not initialized"
         name = self.image_set_index[index]
-        image_file = os.path.join(self.data_path, 'JPEGImages', name + self.extension)
+        if name[0] == '/':
+            image_file = name + self.extension
+        else:
+            image_file = os.path.join(self.data_path, 'JPEGImages', name + self.extension)
         assert os.path.exists(image_file), 'Path does not exist: {}'.format(image_file)
         return image_file
 
@@ -143,7 +149,8 @@ class PascalVoc(Imdb):
         ----------
         full path of annotation file
         """
-        label_file = os.path.join(self.data_path, 'Annotations', index + '.xml')
+        #label_file = os.path.join(self.data_path, 'Annotations', index + '.xml')
+        label_file = index + '.xml'
         assert os.path.exists(label_file), 'Path does not exist: {}'.format(label_file)
         return label_file
 

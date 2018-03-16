@@ -26,12 +26,14 @@ def get_config(network, data_shape, **kwargs):
     ----------
     network : str
         base network name, such as vgg_reduced, inceptionv3, resnet...
-    data_shape : int
+    data_shape : int or tuple(3, height, weight)
         input data dimension
     kwargs : dict
         extra arguments
     """
     if network == 'vgg16_reduced':
+        if isinstance(data_shape, tuple):
+            data_shape = data_shape[1]
         if data_shape >= 448:
             from_layers = ['relu4_3', 'relu7', '', '', '', '', '']
             num_filters = [512, -1, 512, 256, 256, 256, 256]
@@ -57,6 +59,7 @@ def get_config(network, data_shape, **kwargs):
         if not (data_shape == 300 or data_shape == 512):
             logging.warn('data_shape %d was not tested, use with caucious.' % data_shape)
         return locals()
+
     elif network == 'inceptionv3':
         from_layers = ['ch_concat_mixed_7_chconcat', 'ch_concat_mixed_10_chconcat', '', '', '', '']
         num_filters = [-1, -1, 512, 256, 256, 128]
@@ -68,6 +71,7 @@ def get_config(network, data_shape, **kwargs):
         normalizations = -1
         steps = []
         return locals()
+
     elif network == 'resnet50':
         num_layers = 50
         image_shape = '3,224,224'  # resnet require it as shape check
@@ -97,7 +101,7 @@ def get_config(network, data_shape, **kwargs):
         steps = []
         return locals()
     else:
-        msg = 'No configuration found for %s with data_shape %d' % (network, data_shape)
+        msg = 'No configuration found for {} with data_shape {}'.format(network, data_shape)
         raise NotImplementedError(msg)
 
 def get_symbol_train(network, data_shape, **kwargs):
@@ -107,7 +111,7 @@ def get_symbol_train(network, data_shape, **kwargs):
     ----------
     network : str
         name for the base network symbol
-    data_shape : int
+    data_shape : int or tuple (3, height, weight)
         input shape
     kwargs : dict
         see symbol_builder.get_symbol_train for more details
