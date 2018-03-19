@@ -2,24 +2,11 @@
 #coding: utf-8
 
 
-''' 准备华师标注的图像集合，输出 train.lst, val.lst 
 
-        root_path
-            华师标注0108
-                022--
-                    022S0-2.jpg
-                    022S0-2.xml
-                    ...
-                ...
-            ...
-
-'''
-
-
-root_path = '/media/nas/华师标注'
-train_set = ['华师标注0108', '华师标注0115']
-val_set = ['华师标注0206']
-prefix = 'huashi-'
+root_path = '/home/sunkw/work/git/pcm_ssd'
+train_set = ['train',]
+val_set = ['val']
+prefix = 'pcm-'
 
 import os.path as osp
 import os
@@ -41,19 +28,9 @@ def load_jpg_xml(path):
     return rs
 
 
-def load_subpath(path):
-    ''' 返回前缀列表, path=root_path/华师标注0108 然后找这个目录下的所有子目录里面的 jpg, xml
-    '''
-    rs = []
-    for name in os.listdir(path):
-        name = osp.sep.join((path, name))
-        if osp.isdir(name):
-            rs.extend(load_jpg_xml(name))
-    return rs
-
 rs = []
 for ts in train_set:
-    rs.extend(load_subpath(osp.sep.join((root_path, ts))))
+    rs.extend(load_jpg_xml(osp.sep.join((root_path, ts))))
 
 with open(curr_path+'/VOC2007/ImageSets/Main/{}trainval.txt'.format(prefix), 'w') as f:
     for r in rs:
@@ -63,7 +40,7 @@ print(curr_path+'/VOC2007/ImageSets/Main/{}trainval.txt'.format(prefix) + '  sav
 
 rs = []
 for vs in val_set:
-    rs.extend(load_subpath(osp.sep.join((root_path, vs))))
+    rs.extend(load_jpg_xml(osp.sep.join((root_path, vs))))
 
 with open(curr_path+'/VOC2007/ImageSets/Main/{}test.txt'.format(prefix), 'w') as f:
     for r in rs:
@@ -106,31 +83,17 @@ def load_pascal(image_set, year, devkit_path, shuffle=False):
     imdbs = []
     for s, y in zip(image_set, year):
         imdbs.append(PascalVoc(s, y, devkit_path, shuffle, is_train=True, classes=[
-            'stand up',
-            'writing',
-            'reading',
-            'student_look book',
-            'student_raise hand',
-            'wait',
-            'no listen',
-            'discussion group',
-            'bend',
-            'point screen',
-            'point blackboard',
-            'point students',
-            'writing blackboard',
-            'demonstrate',
-            'head',
-        ]))
+            '000', '001', '002', '003', '004', '005', '006']))
+
     if len(imdbs) > 1:
         return ConcatDB(imdbs, shuffle)
     else:
         return imdbs[0]
 
 
-db = load_pascal('trainval', '2007', curr_path, True)
+db = load_pascal('{}trainval'.format(prefix), '2007', curr_path, True)
 print("saving list to disk...")
-db.save_imglist(curr_path + '/{}trainval.lst'.format(prefix))
+db.save_imglist(curr_path + '/../data/{}trainval.lst'.format(prefix))
 
-db = load_pascal('test', '2007', curr_path, False)
-db.save_imglist(curr_path + '/{}test.lst'.format(prefix))
+db = load_pascal('{}test'.format(prefix), '2007', curr_path, False)
+db.save_imglist(curr_path + '/../data/{}test.lst'.format(prefix))
