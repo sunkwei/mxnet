@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument('--finetune', dest='finetune', type=int, default=-1,
                         help='finetune from epoch n, rename the model before doing this')
     parser.add_argument('--pretrained', dest='pretrained', help='pretrained model prefix',
-                        default=os.path.join(os.getcwd(), 'model', 'inception-v3'), type=str)
+                        default='',  type=str)
     parser.add_argument('--epoch', dest='epoch', help='epoch of pretrained model',
                         default=1, type=int)
     parser.add_argument('--prefix', dest='prefix', help='new model prefix',
@@ -128,12 +128,14 @@ if __name__ == '__main__':
         ctx = [mx.gpu(int(i)) for i in args.gpus.split(',') if i.strip()]
     except:
         ctx = [mx.cpu()] if not ctx else ctx
+    ctx = [mx.cpu()]
+
     # class names if applicable
     class_names = parse_class_names(args)
     # start training
     train_net(args.network, args.train_path,
               args.num_class, args.batch_size,
-              (3, 682, 384), [args.mean_r, args.mean_g, args.mean_b],
+              (3,13,997), [args.mean_r, args.mean_g, args.mean_b],
               args.resume, args.finetune, args.pretrained,
               args.epoch, args.prefix, ctx, args.begin_epoch, args.end_epoch,
               args.frequent, args.learning_rate, args.momentum, args.weight_decay,

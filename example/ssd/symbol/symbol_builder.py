@@ -26,6 +26,7 @@ def import_module(module_name):
     sys.path.append(os.path.dirname(__file__))
     return importlib.import_module(module_name)
 
+
 def get_symbol_train(network, num_classes, from_layers, num_filters, strides, pads,
                      sizes, ratios, normalizations=-1, steps=[], min_filter=128,
                      nms_thresh=0.5, force_suppress=False, nms_topk=400, **kwargs):
@@ -115,6 +116,8 @@ def get_symbol_train(network, num_classes, from_layers, num_filters, strides, pa
     out = mx.symbol.Group([cls_prob, loc_loss, cls_label, det])
     return out
 
+
+
 def get_symbol(network, num_classes, from_layers, num_filters, sizes, ratios,
                strides, pads, normalizations=-1, steps=[], min_filter=128,
                nms_thresh=0.5, force_suppress=False, nms_topk=400, **kwargs):
@@ -168,6 +171,7 @@ def get_symbol(network, num_classes, from_layers, num_filters, sizes, ratios,
 
     """
     body = import_module(network).get_symbol(num_classes, **kwargs)
+
     layers = multi_layer_feature(body, from_layers, num_filters, strides, pads,
         min_filter=min_filter)
 

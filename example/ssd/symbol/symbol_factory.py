@@ -1,3 +1,4 @@
+#coding: utf-8
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -86,6 +87,7 @@ def get_config(network, data_shape, **kwargs):
         normalizations = -1
         steps = []
         return locals()
+
     elif network == 'resnet101':
         num_layers = 101
         image_shape = '3,224,224'
@@ -100,6 +102,24 @@ def get_config(network, data_shape, **kwargs):
         normalizations = -1
         steps = []
         return locals()
+
+    elif network == 'pcm':
+        ''' input_shape = (batch, 1, 13, 997)  
+            做N层 conv，
+                conv1: k=(3,21), s=(1, 11), out=(11, 89)
+                conv2: k=(3,21), s=(1, 5), out=(9, 14) 
+        '''
+        from_layers = ['pcm_act1', 'pcm_act2', '', '', '', '']
+        num_filters = [-1, -1, 512, 256, 256, 128]
+        strides = [-1, -1, 2, 2, 2, 2]
+        pads = [-1, -1, 1, 1, 1, 1]
+        sizes = [[.1, .141], [.2,.272], [.37, .447], [.54, .619], [.71, .79], [.88, .961]]
+        ratios = [[1,2,.5], [1,2,.5,3,1./3], [1,2,.5,3,1./3], [1,2,.5,3,1./3], \
+            [1,2,.5], [1,2,.5]]
+        normalizations = -1
+        steps = []
+        return locals()
+
     else:
         msg = 'No configuration found for {} with data_shape {}'.format(network, data_shape)
         raise NotImplementedError(msg)
