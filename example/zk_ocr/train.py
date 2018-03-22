@@ -107,6 +107,9 @@ class DataSource:
             img = np.swapaxes(img, 0, 2)    # (3, xxx, 60)
             img = np.swapaxes(img, 1, 2)    # (3, 60, xxx)
 
+            img /= 255.0
+            img -= 0.5
+
             if img.shape[-1] > max_width:
                 max_width = img.shape[-1]
 
