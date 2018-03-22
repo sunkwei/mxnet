@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 #coding: utf-8
 
 
@@ -16,9 +16,18 @@
 import sys
 import os
 import os.path as osp
+import pickle
+from collections import namedtuple
 
 
 curr_path = osp.dirname(osp.abspath(__file__))
+Descr = namedtuple('Descr', ('fname', 'label', 'img_width'))
+
+
+def get_img_width(fname):
+    import cv2
+    img = cv2.imread(fname)
+    return img.shape[1]
 
 
 def load_all(path):
@@ -43,7 +52,12 @@ def load_all(path):
             max_len = len(label)
             max_label = label
 
-        descrs.append((label, osp.sep.join((path, fname))))
+        fname = osp.sep.join((path, fname))
+        descr = Descr(fname=fname, label=label, img_width=get_img_width(fname))
+        descrs.append(descr)
+
+    # 根据 img_width 排序
+    descrs = sorted(descrs, key=lambda x:x.img_width)
 
     return descrs, max_label, max_len
 
@@ -78,24 +92,40 @@ def save_list(fname, label_fnames, r_vocab, max_label_len):
     '''
     with open(fname, 'w') as f:
         for i,lf in enumerate(label_fnames):
-            line = '\t'.join((str(i), label2ids(lf[0], r_vocab, max_label_len), lf[1], '\n'))
+            line = '\t'.join((str(i), label2ids(lf.label, r_vocab, max_label_len), lf.fname, '\n'))
             f.write(line)
 
 
 if __name__ == '__main__':
-    test_label_fnames, test_max_label, test_max_label_len = load_all('/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/test')
-    test_labels = [ lf[0] for lf in test_label_fnames ]
-    vocab, r_vocab = build_vocab(test_labels)
+    vocab = ['<pad>', '~']
+    r_vocab = { '<pad>': 0, '~': 1 }
 
-    train_label_fnames, train_max_label, train_max_label_len = load_all('/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/train')
-    train_labels = [ lf[0] for lf in train_label_fnames ]
+    test_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/test'
+    train_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/train'
+
+    print('loading: test ...')
+    test_label_fnames, test_max_label, test_max_label_len = load_all(test_sample_path)
+    test_labels = [ lf.label for lf in test_label_fnames ]
+    vocab, r_vocab = build_vocab(test_labels, vocab, r_vocab)
+
+    print('loading: train ...')
+    train_label_fnames, train_max_label, train_max_label_len = load_all(train_sample_path)
+    train_labels = [ lf.label for lf in train_label_fnames ]
     vocab, r_vocab = build_vocab(train_labels, vocab, r_vocab)
 
     max_label_len = max((test_max_label_len, train_max_label_len))
 
     print('max_label_len is {}'.format(max_label_len))
 
-    save_list(curr_path + '/train.lst', train_label_fnames, r_vocab, max_label_len)
-    save_list(curr_path + '/test.lst', test_label_fnames, r_vocab, max_label_len)
+    save_list(curr_path + '/data/train.lst', train_label_fnames, r_vocab, max_label_len)
+    save_list(curr_path + '/data/test.lst', test_label_fnames, r_vocab, max_label_len)
+
+    print('train.lst, val.lst saved')
+
+    v = {'vocab': vocab, 'r_vocab': r_vocab }
+    with open('vocab.pkl', 'wb') as f:
+        pickle.dump(v, f, True)
+
+    print('vocab.pkl saved')
 
 
