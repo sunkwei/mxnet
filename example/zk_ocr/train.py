@@ -10,6 +10,7 @@ import mxnet as mx
 import numpy as np
 import os
 import os.path as osp
+import argparse
 import sys
 import cv2
 from collections import namedtuple
@@ -20,9 +21,9 @@ from config import Config
 from stt_metric import STTMetric
 
 
-ctx = mx.gpu(0)
+ctx = mx.cpu(0)
 curr_path = osp.dirname(osp.abspath(__file__))
-
+prefix = 'ocr'
 
 
 def load_vocab(fname=curr_path+'/data/vocab.pkl'):
@@ -159,6 +160,10 @@ def save_checkpoint(mod, prefix, epoch):
 
 
 def train():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resume', type=int, help='resume epoch')
+    args = parser.parse_args()
+    
     batch_size = Config.batch_size
     epochs = Config.epoch_num
 
@@ -177,13 +182,21 @@ def train():
     data_shapes = [('data', (batch_size, 3, 60, ww * Config.bucket_num))]
     label_shapes = [('label', (batch_size, Config.max_label_len))]
     mod.bind(data_shapes=data_shapes, label_shapes=label_shapes, for_training=True)
-    mod.init_params(mx.init.Xavier(factor_type='in', magnitude=2.34)) 
+
+    if args.resume:
+        from_epoch = args.resume
+        print('RESUME from {}'.format(from_epoch))
+        sym,args,auxs = mx.model.load_checkpoint(prefix, from_epoch)
+        mod.set_params(args, auxs)
+    else:
+        from_epoch = 0
+        mod.init_params(mx.init.Xavier(factor_type='in', magnitude=2.34)) 
+        
 #    mod.init_optimizer(optimizer='sgd', optimizer_params={'learning_rate': Config.learning_rate, 'momentum': 0.5})
     mod.init_optimizer(optimizer='adam', optimizer_params={'learning_rate': Config.learning_rate})
     
     # go
-    for e in range(epochs):
-
+    for e in range(from_epoch+1, epochs):
         # train
         loss_metric.reset()
 

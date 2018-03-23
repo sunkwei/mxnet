@@ -22,5 +22,5 @@ class Config:
 
     learning_rate = 0.0001
 
-    train_show_step = 1000
+    train_show_step = 100
     eval_show_step = 1
