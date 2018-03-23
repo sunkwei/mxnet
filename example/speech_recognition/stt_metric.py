@@ -47,6 +47,7 @@ class STTMetric(mx.metric.EvalMetric):
         self.total_ctc_loss = 0.
         self.batch_loss = 0.
         self.is_logging = is_logging
+
     def update(self, labels, preds):
         check_label_shapes(labels, preds)
         if self.is_logging:
@@ -83,8 +84,10 @@ class STTMetric(mx.metric.EvalMetric):
                     if self.is_logging:
                         log.info("loss: %f " % loss)
         self.total_ctc_loss += self.batch_loss
+
     def get_batch_loss(self):
         return self.batch_loss
+        
     def get_name_value(self):
         total_cer = float(self.total_l_dist) / float(self.total_n_label)
 

@@ -5,7 +5,7 @@
 # 存储动态配置信息
 
 class Config:
-    batch_size = 32
+    batch_size = 4
     epoch_num = 50
     
     rnn_layers_num = 3
@@ -22,5 +22,5 @@ class Config:
 
     learning_rate = 0.0001
 
-    train_show_step = 1000
+    train_show_step = 100
     eval_show_step = 1

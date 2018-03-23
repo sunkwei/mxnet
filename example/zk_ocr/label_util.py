@@ -19,7 +19,6 @@
 
 import csv
 
-from log_util import LogUtil
 import pickle
 import os.path as osp
 
