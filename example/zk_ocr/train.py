@@ -20,7 +20,7 @@ from config import Config
 from stt_metric import STTMetric
 
 
-ctx = mx.cpu()
+ctx = mx.gpu(0)
 curr_path = osp.dirname(osp.abspath(__file__))
 
 
@@ -107,6 +107,8 @@ class DataSource:
             img = np.swapaxes(img, 0, 2)    # (3, xxx, 60)
             img = np.swapaxes(img, 1, 2)    # (3, 60, xxx)
 
+            img = img.astype(dtype=np.float32)
+
             img /= 255.0
             img -= 0.5
 
@@ -150,6 +152,12 @@ class DataSource:
         return [mx.nd.array(imgs)], [mx.nd.array(labels)], img_key
 
 
+def save_checkpoint(mod, prefix, epoch):
+    sym,_,_, = mod._sym_gen(Config.bucket_num-1)
+    sym.save('{}-symbol.json'.format(prefix))
+    mod.save_params(prefix + '-%04d.params' % epoch)
+
+
 def train():
     batch_size = Config.batch_size
     epochs = Config.epoch_num
@@ -170,10 +178,12 @@ def train():
     label_shapes = [('label', (batch_size, Config.max_label_len))]
     mod.bind(data_shapes=data_shapes, label_shapes=label_shapes, for_training=True)
     mod.init_params(mx.init.Xavier(factor_type='in', magnitude=2.34)) 
-    mod.init_optimizer(optimizer='sgd', optimizer_params={'learning_rate': Config.learning_rate})
+#    mod.init_optimizer(optimizer='sgd', optimizer_params={'learning_rate': Config.learning_rate, 'momentum': 0.5})
+    mod.init_optimizer(optimizer='adam', optimizer_params={'learning_rate': Config.learning_rate})
     
     # go
-    for i in range(epochs):
+    for e in range(epochs):
+
         # train
         loss_metric.reset()
 
@@ -182,9 +192,11 @@ def train():
             mod.update()
 
             if i % Config.train_show_step == Config.train_show_step - 1:
-                mod.update_metric(eval_metric, batch.label)
+                print('==> epoch:{}, batch:{}'.format(e, i))
+                mod.update_metric(loss_metric, batch.label)
 
         # save checkpoint
+        save_checkpoint(mod, 'ocr', e)
 
         # val
         # for batch in ds_test:

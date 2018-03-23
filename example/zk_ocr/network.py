@@ -23,17 +23,17 @@ def build_net(bucket_key):
     data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, ww)
     label = mx.sym.var(name='label')    # label shape: (batch_size, MAX_LABEL_LEN)
 
-    k_w = 3
-    s_w = 2
-    data = mx.sym.Convolution(data, name='conv1', num_filter=64, kernel=(3,k_w), stride=(2,s_w))
+    ker = (3,3)
+    stride = (1,4)
+    data = mx.sym.Convolution(data, name='conv1', num_filter=64, kernel=ker, stride=stride)
     data = mx.sym.Activation(data, act_type='relu')
-    axis3 = math.floor((simg - k_w) / s_w + 1)  # (simg - kernel) / stride + 1
+    axis3 = int(math.floor((simg - ker[1]) / stride[1] + 1))  # (simg - kernel) / stride + 1
 
-    k_w = 3
-    s_w = 2
-    data = mx.sym.Convolution(data, name='conv2', num_filter=128, kernel=(3,k_w), stride=(2,s_w))
+    ker = (3,3)
+    stride = (2,4)
+    data = mx.sym.Convolution(data, name='conv2', num_filter=128, kernel=ker, stride=stride)
     data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((axis3 - k_w) / s_w + 1))
+    axis3 = int(math.floor((axis3 - ker[1]) / stride[1] + 1))
 
     # k_w = 3
     # s_w = 5

@@ -38,7 +38,7 @@ def load_all(path):
     max_len = 0
     max_label = None
 
-    for fname in os.listdir(path):
+    for i,fname in enumerate(os.listdir(path)):
         pos = fname.rfind('_')
         if pos == -1:
             continue
@@ -55,6 +55,10 @@ def load_all(path):
         fname = osp.sep.join((path, fname))
         descr = Descr(fname=fname, label=label, img_width=get_img_width(fname))
         descrs.append(descr)
+
+        
+        if i % 1000 == 999:
+            print('load {} items'.format(i+1))
 
     # 根据 img_width 排序
     descrs = sorted(descrs, key=lambda x:x.img_width)
@@ -106,18 +110,20 @@ if __name__ == '__main__':
         '~': 3,
     }
 
-    test_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/test'
-    train_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/train'
+    test_sample_path = 'nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/test'
+    train_sample_path = 'nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/train'
 
     print('loading: test ...')
     test_label_fnames, test_max_label, test_max_label_len = load_all(test_sample_path)
     test_labels = [ lf.label for lf in test_label_fnames ]
     vocab, r_vocab = build_vocab(test_labels, vocab, r_vocab)
+    print('test: vocab size:{}'.format(len(vocab)))
 
     print('loading: train ...')
     train_label_fnames, train_max_label, train_max_label_len = load_all(train_sample_path)
     train_labels = [ lf.label for lf in train_label_fnames ]
     vocab, r_vocab = build_vocab(train_labels, vocab, r_vocab)
+    print('train: vocab size:{}'.format(len(vocab)))
 
     max_label_len = max((test_max_label_len, train_max_label_len))
 
