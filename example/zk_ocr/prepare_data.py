@@ -89,16 +89,22 @@ def label2ids(label_str, r_vocab, max_label_len):
 
 def save_list(fname, label_fnames, r_vocab, max_label_len):
     ''' 需要补齐 max_label_len
+        在 label 前后插入 <b>, <e>
     '''
     with open(fname, 'w') as f:
         for i,lf in enumerate(label_fnames):
-            line = '\t'.join((str(i), label2ids(lf.label, r_vocab, max_label_len), lf.fname, '\n'))
+            line = '\t'.join((str(i), '1', label2ids(lf.label, r_vocab, max_label_len), '2', lf.fname, '\n'))
             f.write(line)
 
 
 if __name__ == '__main__':
-    vocab = ['<pad>', '~']
-    r_vocab = { '<pad>': 0, '~': 1 }
+    vocab = ['<pad>', '<b>', '<e>', '~']
+    r_vocab = { 
+        '<pad>': 0, 
+        '<b>': 1,
+        '<e>': 2,
+        '~': 3,
+    }
 
     test_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/test'
     train_sample_path = '/media/nas/ocr/OCR_samples/sundy_all_samples_可直接使用的/train'
