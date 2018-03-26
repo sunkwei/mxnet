@@ -173,7 +173,7 @@ def train():
     ds_train = DataSource(curr_path+'/data/train.rec', batch_size)
     ds_test = DataSource(curr_path+'/data/test.rec', batch_size)
 
-    mod = mx.mod.BucketingModule(build_net, default_bucket_key=Config.bucket_num-1,
+    mod = mx.mod.BucketingModule(build_net, default_bucket_key=Config.bucket_num - 1,
             context=[ctx])
 
     # bind 时，使用 default_bucket_key 计算
@@ -212,10 +212,15 @@ def train():
         save_checkpoint(mod, 'ocr', e)
 
         # val
-        # for batch in ds_test:
-        #     mod.forward(batch, is_train=False)
+        eval_metric.reset()
 
+        for batch in ds_test:
+            mod.forward(batch, is_train=False)
+            mod.update_metric(eval_metric, batch.label)
 
+        # 根据 e 调整 lr
+        if (e+1) % Config.lr_reduce_epoch:
+            pass
 
 
 if __name__ == '__main__':
