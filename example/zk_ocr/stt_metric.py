@@ -69,16 +69,21 @@ class STTMetric(mx.metric.EvalMetric):
                 self.total_l_dist += l_distance
                 this_cer = float(l_distance) / float(len(l))
     
-                print("label: %s " % (vocab.convert_num_to_word(l)))
-                print("pred : %s , cer: %f (distance: %d/ label length: %d)" % (
-                        vocab.convert_num_to_word(p), this_cer, l_distance, len(l)))
-    
+                if is_epoch_end:
+                    print("TEST: label: %s " % (vocab.convert_num_to_word(l)))
+                    print("      pred : %s , cer: %f (distance: %d/ label length: %d)" % (
+                            vocab.convert_num_to_word(p), this_cer, l_distance, len(l)))
+                else:
+                    print("TRAIN: label: %s " % (vocab.convert_num_to_word(l)))
+                    print("       pred : %s , cer: %f (distance: %d/ label length: %d)" % (
+                            vocab.convert_num_to_word(p), this_cer, l_distance, len(l)))
+                    
                 self.num_inst += 1
                 self.sum_metric += this_cer
                 if self.is_epoch_end:
                     loss = ctc_loss(l, pred, i, int(seq_length), int(self.batch_size), int(self.num_gpu))
                     self.batch_loss += loss
-                    print("loss: %f " % loss)
+                    print("     loss: %f " % loss)
 
         self.total_ctc_loss += self.batch_loss
 
