@@ -69,7 +69,7 @@ class STTMetric(mx.metric.EvalMetric):
                 self.total_l_dist += l_distance
                 this_cer = float(l_distance) / float(len(l))
     
-                if is_epoch_end:
+                if self.is_epoch_end:
                     print("TEST: label: %s " % (vocab.convert_num_to_word(l)))
                     print("      pred : %s , cer: %f (distance: %d/ label length: %d)" % (
                             vocab.convert_num_to_word(p), this_cer, l_distance, len(l)))
