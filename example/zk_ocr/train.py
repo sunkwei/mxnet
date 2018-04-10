@@ -136,18 +136,19 @@ class DataSource:
         imgs = np.vstack(imgs2)
         imgs = imgs.reshape((self.batch_size_, 3, 60, max_width))
 
-        max_label_len = Config.max_label_len
+        ll = int(match.ceil(1.0*Config.max_label_len/Config.bucket_num))
+        label_len = ll * (img_key+1)    # 此处 img_key 相当于 bucket_key
 
         labels2 = []
         for label in labels:
-            pad_n = max_label_len - label.shape[0]
+            pad_n = label_len - label.shape[0]
             if pad_n:
                 label = np.pad(label, (0,pad_n), 'constant', constant_values=(0, 0)) # 0: <pad>
             label = label.reshape((1,-1))
             labels2.append(label)
 
         labels = np.vstack(labels2)
-        labels = labels.reshape((self.batch_size_, max_label_len))
+        labels = labels.reshape((self.batch_size_, label_len))
 
         # 返回之前，转化为 mx.nd.array
         return [mx.nd.array(imgs)], [mx.nd.array(labels)], img_key

@@ -9,19 +9,25 @@ from config import Config
 
 
 ww = math.ceil(1.0 * Config.max_img_width / Config.bucket_num)
-
+ll = math.ceil(1.0 * Config.max_label_len / Config.bucket_num)
 
 
 
 def build_net(bucket_key):
     ''' 构造网络，返回 (sym, data_names, label_names)
+
+        label 长度根据 bucket_key 决定：
+
     '''
 
-    # simg 输入图像 width，slabel 输入标签长度
+    # simg 输入图像宽度
     simg = (bucket_key+1) * ww
+    
+    # label 长度
+    slab = (bucket_key+1) * ll
 
-    data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, ww)
-    label = mx.sym.var(name='label')    # label shape: (batch_size, MAX_LABEL_LEN)
+    data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, simg)
+    label = mx.sym.var(name='label')    # label shape: (batch_size, slab)
 
     ker = (3,3)
     stride = (1,4)
@@ -71,8 +77,8 @@ def build_net(bucket_key):
     label = mx.sym.Reshape(data=label, shape=(-1,))
     label = mx.sym.Cast(data=label, dtype='int32')
 
-    print('build_net: img_width={}, slice_cnt={}, label_length={}'.format(simg, slice_cnt, Config.max_label_len))
-    data = mx.sym.WarpCTC(data=data, label=label, input_length=slice_cnt, label_length=Config.max_label_len)
+    print('build_net: img_width={}, slice_cnt={}, label_length={}'.format(simg, slice_cnt, slab)
+    data = mx.sym.WarpCTC(data=data, label=label, input_length=slice_cnt, label_length=slab)
 
     return (data, ['data'], ['label'])
 
