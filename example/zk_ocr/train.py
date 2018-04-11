@@ -21,7 +21,7 @@ from config import Config
 from stt_metric import STTMetric
 
 
-ctx = mx.cpu(0)
+ctx = mx.gpu(1)
 curr_path = osp.dirname(osp.abspath(__file__))
 prefix = 'ocr'
 
@@ -90,6 +90,7 @@ class DataSource:
 
         max_width = 0
 
+
         for i in range(base_idx, base_idx + self.batch_size_):
             raw_data = self.db_.read()
             data = mx.recordio.unpack(raw_data)
@@ -136,18 +137,23 @@ class DataSource:
         imgs = np.vstack(imgs2)
         imgs = imgs.reshape((self.batch_size_, 3, 60, max_width))
 
-        max_label_len = Config.max_label_len
+        ll = int(math.ceil(1.0*Config.max_label_len/Config.bucket_num))
+        label_len = ll * (img_key+1)    # 此处 img_key 相当于 bucket_key
 
         labels2 = []
         for label in labels:
-            pad_n = max_label_len - label.shape[0]
-            if pad_n:
+            pad_n = label_len - label.shape[0]
+            if pad_n < 0:
+                print('bucket key={}, img width={}'.format(img_key, max_width))
+                print('???? label_len={}, label.shape={}, {}'.format(label_len, label.shape, label))
+                label = label[:label_len]
+            elif pad_n:
                 label = np.pad(label, (0,pad_n), 'constant', constant_values=(0, 0)) # 0: <pad>
             label = label.reshape((1,-1))
             labels2.append(label)
 
         labels = np.vstack(labels2)
-        labels = labels.reshape((self.batch_size_, max_label_len))
+        labels = labels.reshape((self.batch_size_, label_len))
 
         # 返回之前，转化为 mx.nd.array
         return [mx.nd.array(imgs)], [mx.nd.array(labels)], img_key
@@ -189,7 +195,7 @@ def train():
         sym,args,auxs = mx.model.load_checkpoint(prefix, from_epoch)
         mod.set_params(args, auxs)
     else:
-        from_epoch = 0
+        from_epoch = -1
         mod.init_params(mx.init.Xavier(factor_type='in', magnitude=2.34)) 
         
 #    mod.init_optimizer(optimizer='sgd', optimizer_params={'learning_rate': Config.learning_rate, 'momentum': 0.5})
@@ -197,6 +203,13 @@ def train():
     
     # go
     for e in range(from_epoch+1, epochs):
+        eval_metric.reset()
+        for i,batch in enumerate(ds_test):
+            mod.forward(batch, is_train=False)
+            if i % Config.eval_show_step == Config.eval_show_step -1:
+                mod.update_metric(eval_metric, batch.label)
+
+
         # train
         loss_metric.reset()
 
@@ -212,15 +225,16 @@ def train():
         save_checkpoint(mod, 'ocr', e)
 
         # val
-        eval_metric.reset()
+#        eval_metric.reset()
 
-        for batch in ds_test:
-            mod.forward(batch, is_train=False)
-            mod.update_metric(eval_metric, batch.label)
+#        for i,batch in enumerate(ds_test):
+#            mod.forward(batch, is_train=False)
+#            if i % Config.eval_show_step == Config.eval_show_step -1:
+#                mod.update_metric(eval_metric, batch.label)
 
         # 根据 e 调整 lr
-        if (e+1) % Config.lr_reduce_epoch:
-            pass
+#        if (e+1) % Config.lr_reduce_epoch:
+#            pass
 
 
 if __name__ == '__main__':

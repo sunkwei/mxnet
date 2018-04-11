@@ -9,37 +9,50 @@ from config import Config
 
 
 ww = math.ceil(1.0 * Config.max_img_width / Config.bucket_num)
-
+ll = math.ceil(1.0 * Config.max_label_len / Config.bucket_num)
 
 
 
 def build_net(bucket_key):
     ''' 构造网络，返回 (sym, data_names, label_names)
+
+        label 长度根据 bucket_key 决定：
+
     '''
 
-    # simg 输入图像 width，slabel 输入标签长度
+    # simg 输入图像宽度
     simg = (bucket_key+1) * ww
+    
+    # label 长度
+    slab = (bucket_key+1) * ll
 
-    data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, ww)
-    label = mx.sym.var(name='label')    # label shape: (batch_size, MAX_LABEL_LEN)
-
-    ker = (3,3)
-    stride = (1,4)
-    data = mx.sym.Convolution(data, name='conv1', num_filter=64, kernel=ker, stride=stride)
-    data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((simg - ker[1]) / stride[1] + 1))  # (simg - kernel) / stride + 1
+    data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, simg)
+    label = mx.sym.var(name='label')    # label shape: (batch_size, slab)
 
     ker = (3,3)
-    stride = (2,4)
-    data = mx.sym.Convolution(data, name='conv2', num_filter=128, kernel=ker, stride=stride)
+    stride = (2,2)
+    data = mx.sym.Convolution(data, name='conv1', num_filter=16, kernel=ker, stride=stride, pad=(1,1))
     data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((axis3 - ker[1]) / stride[1] + 1))
+    axis3 = int(math.floor((simg - ker[1] + 2) / stride[1] + 1))  # (simg - kernel) / stride + 1
 
-    # k_w = 3
-    # s_w = 5
-    # data = mx.sym.Convolution(data, name='conv3', num_filter=256, kernel=(3,k_w), stride=(1,s_w))
-    # data = mx.sym.Activation(data, act_type='relu')
-    # axis3 = int(math.floor((axis3 - k_w) / s_w + 1))
+    ker = (3,3)
+    stride = (1,2)
+    data = mx.sym.Convolution(data, name='conv2', num_filter=64, kernel=ker, stride=stride, pad=(1,1))
+    data = mx.sym.Activation(data, act_type='relu')
+    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+
+    ker = (3,3)
+    stride = (1,1)
+    data = mx.sym.Convolution(data, name='conv3', num_filter=128, kernel=ker, stride=stride, pad=(1,1))
+    data = mx.sym.Activation(data, act_type='relu')
+    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+
+#    ker = (3,3)
+#    stride = (1,2)
+#    data = mx.sym.Convolution(data, name='conv4', num_filter=256, kernel=ker, stride=stride, pad=(1,1))
+#    data = mx.sym.Activation(data, act_type='relu')
+#    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+
 
     # 将 data[3] 轴完全分割 ...
     slice_cnt = axis3
@@ -52,6 +65,7 @@ def build_net(bucket_key):
     for i in range(Config.rnn_layers_num):
         cell = mx.rnn.GRUCell(Config.rnn_hidden_num, prefix='gru_{}'.format(i))
         stack.add(cell)
+#        stack.add(mx.rnn.DropoutCell(0.3, prefix='drop_{}'.format(i)))
 
     outputs, states = stack.unroll(slice_cnt, data)
 
@@ -63,6 +77,7 @@ def build_net(bucket_key):
     for i,o in enumerate(outputs):
         fc = mx.sym.FullyConnected(data=o, name='fco_{}'.format(i), 
                 num_hidden=Config.vocab_size, weight=cls_weight, bias=cls_bias)
+        fc = mx.sym.Dropout(fc, p=0.3)
         seq.append(fc)
     
     data = mx.sym.concat(*seq, dim=0)
@@ -71,8 +86,8 @@ def build_net(bucket_key):
     label = mx.sym.Reshape(data=label, shape=(-1,))
     label = mx.sym.Cast(data=label, dtype='int32')
 
-    print('build_net: img_width={}, slice_cnt={}, label_length={}'.format(simg, slice_cnt, Config.max_label_len))
-    data = mx.sym.WarpCTC(data=data, label=label, input_length=slice_cnt, label_length=Config.max_label_len)
+    print('build_net: img_width={}, slice_cnt={}, label_length={}'.format(simg, slice_cnt, slab))
+    data = mx.sym.WarpCTC(data=data, label=label, input_length=slice_cnt, label_length=slab)
 
     return (data, ['data'], ['label'])
 
