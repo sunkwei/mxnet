@@ -24,34 +24,43 @@ def build_net(bucket_key):
     simg = (bucket_key+1) * ww
     
     # label 长度
-    slab = (bucket_key+1) * ll
+    slab = int((bucket_key+1) * ll)
 
     data = mx.sym.var(name='data')      # data shape: (batch_size, 3, 60, simg)
     label = mx.sym.var(name='label')    # label shape: (batch_size, slab)
 
     ker = (3,3)
-    stride = (2,2)
-    data = mx.sym.Convolution(data, name='conv1', num_filter=16, kernel=ker, stride=stride, pad=(1,1))
+    stride = (1,1)
+    pad = (1,1)
+    data = mx.sym.Convolution(data, name='conv1', num_filter=64, kernel=ker, stride=stride, pad=pad)
     data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((simg - ker[1] + 2) / stride[1] + 1))  # (simg - kernel) / stride + 1
+    axis3 = int(math.floor((simg - ker[1] + 2*pad[1]) / stride[1] + 1))  # (simg - kernel) / stride + 1
 
-    ker = (3,3)
-    stride = (1,2)
-    data = mx.sym.Convolution(data, name='conv2', num_filter=64, kernel=ker, stride=stride, pad=(1,1))
-    data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+    pool_stride = (1,2)
+    data = mx.sym.Pooling(data, pool_type='max', pad=pad, kernel=ker, stride=pool_stride)    
+    axis3 = int(math.floor((axis3 - ker[1] + 2*pad[1]) / pool_stride[1] + 1))
 
     ker = (3,3)
     stride = (1,1)
-    data = mx.sym.Convolution(data, name='conv3', num_filter=128, kernel=ker, stride=stride, pad=(1,1))
+    pad = (1,1)
+    data = mx.sym.Convolution(data, name='conv2', num_filter=128, kernel=ker, stride=stride, pad=pad)
     data = mx.sym.Activation(data, act_type='relu')
-    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+    axis3 = int(math.floor((axis3 - ker[1] + 2*pad[1]) / stride[1] + 1))
 
-#    ker = (3,3)
-#    stride = (1,2)
-#    data = mx.sym.Convolution(data, name='conv4', num_filter=256, kernel=ker, stride=stride, pad=(1,1))
-#    data = mx.sym.Activation(data, act_type='relu')
-#    axis3 = int(math.floor((axis3 - ker[1] + 2) / stride[1] + 1))
+    pool_stride = (1,2)
+    data = mx.sym.Pooling(data, pool_type='max', pad=pad, kernel=ker, stride=pool_stride)    
+    axis3 = int(math.floor((axis3 - ker[1] + 2*pad[1]) / pool_stride[1] + 1))
+
+    ker = (3,3)
+    stride = (1,1)
+    pad = (1,1)
+    data = mx.sym.Convolution(data, name='conv3', num_filter=256, kernel=ker, stride=stride, pad=pad)
+    data = mx.sym.Activation(data, act_type='relu')
+    axis3 = int(math.floor((axis3 - ker[1] + 2*pad[1]) / stride[1] + 1))
+
+    pool_stride = (1,2)
+    data = mx.sym.Pooling(data, pool_type='max', pad=pad, kernel=ker, stride=pool_stride)    
+    axis3 = int(math.floor((axis3 - ker[1] + 2*pad[1]) / pool_stride[1] + 1))
 
 
     # 将 data[3] 轴完全分割 ...
@@ -75,6 +84,9 @@ def build_net(bucket_key):
     
     seq = []
     for i,o in enumerate(outputs):
+        if Config.vocab_size < 0:
+            Config.vocab_size = 5000
+
         fc = mx.sym.FullyConnected(data=o, name='fco_{}'.format(i), 
                 num_hidden=Config.vocab_size, weight=cls_weight, bias=cls_bias)
         fc = mx.sym.Dropout(fc, p=0.3)

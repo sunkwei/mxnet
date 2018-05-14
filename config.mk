@@ -64,7 +64,7 @@ ADD_CFLAGS =
 #---------------------------------------------
 
 # whether use CUDA during compile
-USE_CUDA = 1
+USE_CUDA = 0
 
 # add the path to CUDA library to link and compile flag
 # if you have already add them to environment variable, leave it as NONE
@@ -72,10 +72,10 @@ USE_CUDA = 1
 USE_CUDA_PATH = /usr/local/cuda
 
 # whether to enable CUDA runtime compilation
-ENABLE_CUDA_RTC = 1
+ENABLE_CUDA_RTC = 0
 
 # whether use CuDNN R3 library
-USE_CUDNN = 1
+USE_CUDNN = 0
 
 #whether to use NCCL library
 USE_NCCL = 0
